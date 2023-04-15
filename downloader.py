@@ -41,14 +41,12 @@ def download_playlist(playlist_info):
             future = pool.submit(request_download_file, info[1], info[0], playlist_info[1])
             futures.append(future)
         wait(futures, return_when=ALL_COMPLETED)
-        print(f"Downloaded {os.path.dirname(playlist_info[1])}")
 
 
 def download_all_threaded(download_info):
     for playlist_info in download_info:
         download_playlist(playlist_info)
-        print('downloaded')
-        # upload_to_onedrive()
+        upload_to_onedrive()
         delete_from_local(playlist_info[1])
 
 
