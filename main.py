@@ -6,5 +6,5 @@ with open("downloads.txt", "r") as f:
     urls = [url.strip() for url in f.readlines()]
 
 for url in urls:
-    subprocess.call(["sudo", "ip", "netns", "exec", "vpn", "python3", "scraper.py", url])
+    subprocess.call(["netns-exec", "python3", "scraper.py", url])
     main()
