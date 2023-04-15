@@ -8,7 +8,7 @@ import threading
 from playwright.sync_api import Playwright, expect, sync_playwright
 from tqdm import tqdm
 
-base_directory = "/home/netsbit/OneDrive/files"
+base_directory = "/home/hoangminhlvt/OneDrive/files"
 
 
 def remove_windows_prohibited_chars(str):
@@ -161,7 +161,7 @@ def download_all_no_threads(download_info):
 
 
 def run(playwright: Playwright):
-    browser = playwright.chromium.launch(headless=True)
+    browser = playwright.chromium.launch(headless=False)
     context = browser.new_context()
     page = context.new_page()
     # browser = playwright.chromium.connect_over_cdp("http://localhost:1559")
@@ -194,10 +194,10 @@ def run(playwright: Playwright):
                 if not os.path.exists(folder):
                     os.makedirs(folder)
                 download_info.append([get_all_download_info(page, videos[0]), folder])
-                download_all_no_threads(download_info)
-                download_info.remove(download_info[0])
-                upload_to_onedrive()
-                delete_from_local(base_directory)
+            download_all_no_threads(download_info)
+            download_info.remove(download_info[0])
+            upload_to_onedrive()
+            delete_from_local(base_directory)
     elif option == "a":
         # Reduces overhead by logging in once and get all video info
         urls = []
