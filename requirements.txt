@@ -1,3 +1,4 @@
 requests
 tqdm
 pytest-playwright
+u-msgpack-python
