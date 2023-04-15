@@ -1,14 +1,13 @@
 import os
+import pickle
 import re
-import subprocess
 import sys
 import time
-import requests
-import threading
-from playwright.sync_api import Playwright, expect, sync_playwright
-from tqdm import tqdm
 
-base_directory = "/home/hoangminhlvt/OneDrive/files"
+import umsgpack
+from playwright.sync_api import Playwright, expect, sync_playwright
+
+base_directory = "/home/netsbit/OneDrive/files"
 
 
 def remove_windows_prohibited_chars(str):
@@ -62,30 +61,6 @@ def get_video_urls_from_page(page, page_url):
     return [videos, get_playlist_name(page)]
 
 
-def request_download_file(mp4_url, name, folder):
-    response = requests.get(mp4_url, stream=True)
-    total_size_in_bytes = int(response.headers.get('content-length', 0))
-    block_size = 1024
-    progress_bar = tqdm(total=total_size_in_bytes, unit='iB', unit_scale=True, leave=False)
-    with open(f'{folder}/{name}.mp4', 'wb') as file:
-        for data in response.iter_content(block_size):
-            progress_bar.update(len(data))
-            file.write(data)
-    progress_bar.close()
-    print(f"Downloaded {name}.mp4")
-    if total_size_in_bytes != 0 and progress_bar.n != total_size_in_bytes:
-        print("ERROR, something went wrong")
-
-
-def request_download_file_no_tqdm(mp4_url, name, folder):
-    response = requests.get(mp4_url, stream=True)
-    block_size = 1024
-    with open(f'{folder}/{name}.mp4', 'wb') as file:
-        for data in response.iter_content(block_size):
-            file.write(data)
-    print(f"Downloaded {name}.mp4")
-
-
 def get_download_info(page, video_url):
     print(f"Getting info for {video_url}")
     page.goto(video_url)
@@ -109,14 +84,6 @@ def get_all_download_info(page, urls):
         _[0] = f"{i + 1}. {_[0]}"
         info.append(_)
     return info
-
-
-def upload_to_onedrive():
-    subprocess.call(["onedrive", "--synchronize", "--upload-only", "--no-remote-delete"])
-
-
-def delete_from_local(folder):
-    subprocess.call(["rm", "-rf", f"{folder}"])
 
 
 def list_remove_duplicates(l):
@@ -148,78 +115,32 @@ def get_playlist_name(page):
     return remove_windows_prohibited_chars(page.locator("h1").inner_text())
 
 
-def category_handler(page, category_url):
-    playlists = get_playlist_urls_from_page(page, category_url)
-
-    return playlists
-
-
-def download_all_no_threads(download_info):
-    for playlist_info in download_info:
-        for info in playlist_info[0]:
-            request_download_file_no_tqdm(info[1], info[0], playlist_info[1])
-
-
-def run(playwright: Playwright):
-    browser = playwright.chromium.launch(headless=False)
+def run(playwright: Playwright, url):
+    browser = playwright.chromium.launch(headless=True)
     context = browser.new_context()
     page = context.new_page()
     # browser = playwright.chromium.connect_over_cdp("http://localhost:1559")
     # default_context = browser.contexts[0]
     # page = default_context.pages[0]
-    option = sys.argv[1]
-    if option == "u":
-        url = sys.argv[2]
-        log_in(page)
-        urls = get_video_urls_from_page(page, url)
-        folder = f"{base_directory}/{get_name_of_folder(page)}"
+    log_in(page)
+    playlist_info = get_playlist_urls_from_page(page, url)
+    download_info = []
+
+    for playlist in playlist_info:
+        videos = get_video_urls_from_page(page, playlist)
+        _ = get_name_of_folder(page)
+        folder = f"{base_directory}/{_}"
         if not os.path.exists(folder):
             os.makedirs(folder)
-        download_info = get_all_download_info(page, urls)
-        download_all_no_threads(download_info)
-        upload_to_onedrive()
-        delete_from_local()
-    elif option == "p":
-        with open("downloads.txt", "r") as f:
-            category_urls = [line.strip() for line in f]
-        log_in(page)
-        playlist_info = [category_handler(page, url) for url in category_urls]
-        download_info = []
-
-        for info in playlist_info:
-            for playlist in info:
-                videos = get_video_urls_from_page(page, playlist)
-                _ = get_name_of_folder(page)
-                folder = f"{base_directory}/{_}"
-                if not os.path.exists(folder):
-                    os.makedirs(folder)
-                download_info.append([get_all_download_info(page, videos[0]), folder])
-            download_all_no_threads(download_info)
-            download_info.remove(download_info[0])
-            upload_to_onedrive()
-            delete_from_local(base_directory)
-    elif option == "a":
-        # Reduces overhead by logging in once and get all video info
-        urls = []
-        all_videos_info = []
-        with open("downloads.txt", "r") as f:
-            for line in f:
-                urls.append(line.strip())
-        log_in(page)
-        for url in urls:
-            page.goto(url)
-            folder = f"{base_directory}/{get_name_of_folder(page)}"
-            if not os.path.exists(folder):
-                os.makedirs(folder)
-            all_videos_info.append([get_all_download_info(page, get_video_urls_from_page(page, url)), folder])
-        page.close()
-        context.close()
-        browser.close()
-        for info in all_videos_info:
-            download_all_videos(info[0], info[1])
-        upload_to_onedrive()
-        delete_from_local(base_directory)
+        download_info.append([get_all_download_info(page, videos[0]), folder])
+    with open("download_info.msgpack", "wb") as f:
+        f.write(umsgpack.packb(download_info))
 
 
-with sync_playwright() as p:
-    run(p)
+def main(url):
+    with sync_playwright() as playwright:
+        run(playwright, url)
+
+
+if __name__ == "__main__":
+    main(sys.argv[1])
