@@ -1,1 +1,1 @@
-unbuffer python3 main.py | tee log.log
+python3 main.py

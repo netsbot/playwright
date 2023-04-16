@@ -1,3 +1,4 @@
+import logging
 import os.path
 import subprocess
 import umsgpack
@@ -15,6 +16,8 @@ def request_download_file(mp4_url, name, folder):
             for data in response.iter_content(block_size):
                 pbar.update(len(data))
                 file.write(data)
+    tqdm.write(f"Downloaded {name}.mp4")
+    logging.log(logging.INFO, f"Downloaded {name}.mp4")
 
 
 def request_download_file_no_tqdm(mp4_url, name, folder):
@@ -28,10 +31,12 @@ def request_download_file_no_tqdm(mp4_url, name, folder):
 
 def upload_to_onedrive():
     subprocess.call(["onedrive", "--synchronize", "--upload-only", "--no-remote-delete"])
+    logging.log(logging.INFO, "Uploaded to OneDrive")
 
 
 def delete_from_local(folder):
     subprocess.call(["rm", "-rf", f"{folder}"])
+    logging.log(logging.INFO, f"Deleted {folder}")
 
 
 def download_playlist(playlist_info):
@@ -51,6 +56,7 @@ def download_all_threaded(download_info):
 
 
 def main():
+    logging.basicConfig(filename="downloader.log", level=logging.INFO)
     with open("download_info.msgpack", "rb") as f:
         download_info = umsgpack.unpackb(f.read())
         download_all_threaded(download_info)

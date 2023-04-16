@@ -1,5 +1,5 @@
+import logging
 import os
-import pickle
 import re
 import sys
 import time
@@ -43,7 +43,8 @@ def get_mp4_url(page):
 def get_video_urls_from_page(page, page_url):
     while True:
         try:
-            print(f"Scrapping {page_url}")
+            print(f"Scrapping {page_url}", end="\r")
+            logging.log(logging.INFO, f"Scrapping {page_url}")
             page.goto(page_url)
             page.wait_for_load_state("networkidle")
             videos_list = page.locator("xpath=/html/body/div[1]/div/div[2]/section/div/section/div/ul")
@@ -62,7 +63,7 @@ def get_video_urls_from_page(page, page_url):
 
 
 def get_download_info(page, video_url):
-    print(f"Getting info for {video_url}")
+    print(f"Getting info for {video_url}", end="\x1b[1K\r")
     page.goto(video_url)
     title = get_video_title(page)
     mp4_url = get_mp4_url(page)
@@ -94,6 +95,7 @@ def get_playlist_urls_from_page(page, page_url):
     while True:
         try:
             print(f"Scrapping {page_url}")
+            logging.log(logging.INFO, f"Scrapping {page_url}")
             page.goto(page_url)
             page.wait_for_load_state("networkidle")
             a_elements = page.locator("xpath=/html/body/div[1]/div/section/div/section/div[2]/section[2]/div/ul")
@@ -143,4 +145,5 @@ def main(url):
 
 
 if __name__ == "__main__":
+    logging.basicConfig(filename="scraper.log", level=logging.INFO, filemode="w")
     main(sys.argv[1])
