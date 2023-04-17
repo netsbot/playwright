@@ -7,7 +7,7 @@ import time
 import umsgpack
 from playwright.sync_api import Playwright, expect, sync_playwright
 
-base_directory = "/home/netsbit/OneDrive/files"
+base_directory = "/home/hoangminhlvt/OneDrive/files"
 
 
 def remove_windows_prohibited_chars(str):
