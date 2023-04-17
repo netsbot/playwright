@@ -51,7 +51,8 @@ def download_playlist(playlist_info):
 def download_all_threaded(download_info):
     for playlist_info in download_info:
         download_playlist(playlist_info)
-        upload_to_onedrive()
+    upload_to_onedrive()
+    for playlist_info in download_info:
         delete_from_local(playlist_info[1])
 
 
@@ -60,3 +61,6 @@ def main():
     with open("download_info.msgpack", "rb") as f:
         download_info = umsgpack.unpackb(f.read())
         download_all_threaded(download_info)
+
+
+main()

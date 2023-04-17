@@ -64,6 +64,7 @@ def get_video_urls_from_page(page, page_url):
 
 def get_download_info(page, video_url):
     print(f"Getting info for {video_url}", end="\x1b[1K\r")
+    logging.log(logging.INFO, f"Getting info for {video_url}")
     page.goto(video_url)
     title = get_video_title(page)
     mp4_url = get_mp4_url(page)
